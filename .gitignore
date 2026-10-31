@@ -1,0 +1,19 @@
+.venv/
+.env
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+node_modules/
+dist/
+.wheelhouse/
+frontend/test-results/
+frontend/playwright-report/
+evals/reports/ci/
+
+# Local secrets and developer artifacts
+.env.*
+!.env.example
+*.pem
+*.key
+.DS_Store

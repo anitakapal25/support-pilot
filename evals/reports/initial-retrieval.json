@@ -1,0 +1,470 @@
+{
+  "embedding": "demo-hash-v1:256",
+  "calibrated_threshold": 0.5,
+  "configured_threshold": 0.5,
+  "calibration_trials": [
+    {
+      "threshold": 0.5,
+      "cases": 17,
+      "answerable": 12,
+      "recall_at_5_count": 12,
+      "recall_at_5": 1.0,
+      "gate_true_positive": 12,
+      "gate_false_positive": 0,
+      "gate_true_negative": 5,
+      "gate_false_negative": 0
+    },
+    {
+      "threshold": 0.6,
+      "cases": 17,
+      "answerable": 12,
+      "recall_at_5_count": 12,
+      "recall_at_5": 1.0,
+      "gate_true_positive": 11,
+      "gate_false_positive": 0,
+      "gate_true_negative": 5,
+      "gate_false_negative": 1
+    },
+    {
+      "threshold": 0.7,
+      "cases": 17,
+      "answerable": 12,
+      "recall_at_5_count": 12,
+      "recall_at_5": 1.0,
+      "gate_true_positive": 10,
+      "gate_false_positive": 0,
+      "gate_true_negative": 5,
+      "gate_false_negative": 2
+    },
+    {
+      "threshold": 0.8,
+      "cases": 17,
+      "answerable": 12,
+      "recall_at_5_count": 12,
+      "recall_at_5": 1.0,
+      "gate_true_positive": 9,
+      "gate_false_positive": 0,
+      "gate_true_negative": 5,
+      "gate_false_negative": 3
+    },
+    {
+      "threshold": 0.9,
+      "cases": 17,
+      "answerable": 12,
+      "recall_at_5_count": 12,
+      "recall_at_5": 1.0,
+      "gate_true_positive": 9,
+      "gate_false_positive": 0,
+      "gate_true_negative": 5,
+      "gate_false_negative": 3
+    },
+    {
+      "threshold": 1.0,
+      "cases": 17,
+      "answerable": 12,
+      "recall_at_5_count": 12,
+      "recall_at_5": 1.0,
+      "gate_true_positive": 9,
+      "gate_false_positive": 0,
+      "gate_true_negative": 5,
+      "gate_false_negative": 3
+    }
+  ],
+  "dev": {
+    "cases": 17,
+    "answerable": 12,
+    "recall_at_5_count": 12,
+    "recall_at_5": 1.0,
+    "gate_true_positive": 12,
+    "gate_false_positive": 0,
+    "gate_true_negative": 5,
+    "gate_false_negative": 0
+  },
+  "heldout": {
+    "cases": 9,
+    "answerable": 6,
+    "recall_at_5_count": 6,
+    "recall_at_5": 1.0,
+    "gate_true_positive": 6,
+    "gate_false_positive": 1,
+    "gate_true_negative": 2,
+    "gate_false_negative": 0
+  },
+  "cases": [
+    {
+      "id": "shipping-times",
+      "split": "dev",
+      "expected_articles": [
+        "shipping-times"
+      ],
+      "retrieved_articles": [
+        "shipping-cost",
+        "shipping-times",
+        "return-shipping",
+        "shipping-cost",
+        "return-process"
+      ],
+      "max_coverage": 0.5
+    },
+    {
+      "id": "shipping-cost",
+      "split": "dev",
+      "expected_articles": [
+        "shipping-cost"
+      ],
+      "retrieved_articles": [
+        "shipping-cost",
+        "shipping-cost",
+        "return-process",
+        "shipping-times",
+        "return-shipping"
+      ],
+      "max_coverage": 1.0
+    },
+    {
+      "id": "shipping-regions",
+      "split": "heldout",
+      "expected_articles": [
+        "shipping-regions"
+      ],
+      "retrieved_articles": [
+        "tracking",
+        "return-shipping",
+        "shipping-cost",
+        "shipping-regions",
+        "shipping-times"
+      ],
+      "max_coverage": 1.0
+    },
+    {
+      "id": "tracking",
+      "split": "dev",
+      "expected_articles": [
+        "tracking"
+      ],
+      "retrieved_articles": [
+        "tracking",
+        "delayed-delivery",
+        "return-shipping",
+        "delivered-missing",
+        "password-reset"
+      ],
+      "max_coverage": 0.6666666666666666
+    },
+    {
+      "id": "delayed-delivery",
+      "split": "dev",
+      "expected_articles": [
+        "delayed-delivery"
+      ],
+      "retrieved_articles": [
+        "delayed-delivery",
+        "delivered-missing",
+        "wrong-item",
+        "return-window",
+        "shipping-times"
+      ],
+      "max_coverage": 1.0
+    },
+    {
+      "id": "delivered-missing",
+      "split": "heldout",
+      "expected_articles": [
+        "delivered-missing"
+      ],
+      "retrieved_articles": [
+        "delivered-missing",
+        "tracking",
+        "missing-item",
+        "return-window",
+        "delayed-delivery"
+      ],
+      "max_coverage": 1.0
+    },
+    {
+      "id": "return-window",
+      "split": "dev",
+      "expected_articles": [
+        "return-window"
+      ],
+      "retrieved_articles": [
+        "return-shipping",
+        "return-process",
+        "return-window",
+        "refund-timing",
+        "missing-item"
+      ],
+      "max_coverage": 0.75
+    },
+    {
+      "id": "return-exclusions",
+      "split": "dev",
+      "expected_articles": [
+        "return-exclusions"
+      ],
+      "retrieved_articles": [
+        "return-shipping",
+        "return-process",
+        "return-exclusions",
+        "return-window",
+        "wrong-item"
+      ],
+      "max_coverage": 1.0
+    },
+    {
+      "id": "return-process",
+      "split": "heldout",
+      "expected_articles": [
+        "return-process"
+      ],
+      "retrieved_articles": [
+        "return-shipping",
+        "return-process",
+        "return-window",
+        "return-exclusions",
+        "refund-timing"
+      ],
+      "max_coverage": 1.0
+    },
+    {
+      "id": "return-shipping",
+      "split": "dev",
+      "expected_articles": [
+        "return-shipping"
+      ],
+      "retrieved_articles": [
+        "return-shipping",
+        "return-process",
+        "return-exclusions",
+        "return-window",
+        "account-security"
+      ],
+      "max_coverage": 1.0
+    },
+    {
+      "id": "refund-timing",
+      "split": "heldout",
+      "expected_articles": [
+        "refund-timing"
+      ],
+      "retrieved_articles": [
+        "refund-timing",
+        "delayed-delivery",
+        "return-window",
+        "tracking",
+        "shipping-times"
+      ],
+      "max_coverage": 0.6666666666666666
+    },
+    {
+      "id": "damaged-item",
+      "split": "dev",
+      "expected_articles": [
+        "damaged-item"
+      ],
+      "retrieved_articles": [
+        "damaged-item",
+        "return-shipping",
+        "return-exclusions",
+        "refund-timing",
+        "missing-item"
+      ],
+      "max_coverage": 1.0
+    },
+    {
+      "id": "wrong-item",
+      "split": "dev",
+      "expected_articles": [
+        "wrong-item"
+      ],
+      "retrieved_articles": [
+        "wrong-item",
+        "refund-timing",
+        "missing-item",
+        "return-shipping",
+        "return-exclusions"
+      ],
+      "max_coverage": 1.0
+    },
+    {
+      "id": "missing-item",
+      "split": "heldout",
+      "expected_articles": [
+        "missing-item"
+      ],
+      "retrieved_articles": [
+        "missing-item",
+        "delivered-missing",
+        "damaged-item",
+        "return-shipping",
+        "return-exclusions"
+      ],
+      "max_coverage": 1.0
+    },
+    {
+      "id": "password-reset",
+      "split": "dev",
+      "expected_articles": [
+        "password-reset"
+      ],
+      "retrieved_articles": [
+        "password-reset",
+        "tracking",
+        "account-security",
+        "return-shipping",
+        "delivered-missing"
+      ],
+      "max_coverage": 1.0
+    },
+    {
+      "id": "email-change",
+      "split": "dev",
+      "expected_articles": [
+        "email-change"
+      ],
+      "retrieved_articles": [
+        "email-change",
+        "guest-orders",
+        "account-security",
+        "password-reset",
+        "return-shipping"
+      ],
+      "max_coverage": 1.0
+    },
+    {
+      "id": "account-security",
+      "split": "heldout",
+      "expected_articles": [
+        "account-security"
+      ],
+      "retrieved_articles": [
+        "account-security",
+        "email-change",
+        "guest-orders",
+        "password-reset",
+        "return-shipping"
+      ],
+      "max_coverage": 1.0
+    },
+    {
+      "id": "guest-orders",
+      "split": "dev",
+      "expected_articles": [
+        "guest-orders"
+      ],
+      "retrieved_articles": [
+        "guest-orders",
+        "tracking",
+        "missing-item",
+        "delivered-missing",
+        "return-window"
+      ],
+      "max_coverage": 1.0
+    },
+    {
+      "id": "unsupported-0",
+      "split": "dev",
+      "expected_articles": [],
+      "retrieved_articles": [
+        "wrong-item",
+        "tracking",
+        "return-shipping",
+        "refund-timing",
+        "return-process"
+      ],
+      "max_coverage": 0
+    },
+    {
+      "id": "unsupported-1",
+      "split": "dev",
+      "expected_articles": [],
+      "retrieved_articles": [
+        "return-shipping",
+        "guest-orders",
+        "delayed-delivery",
+        "tracking",
+        "missing-item"
+      ],
+      "max_coverage": 0
+    },
+    {
+      "id": "unsupported-2",
+      "split": "dev",
+      "expected_articles": [],
+      "retrieved_articles": [
+        "shipping-cost",
+        "shipping-cost",
+        "return-window",
+        "tracking",
+        "delivered-missing"
+      ],
+      "max_coverage": 0
+    },
+    {
+      "id": "unsupported-3",
+      "split": "dev",
+      "expected_articles": [],
+      "retrieved_articles": [
+        "email-change",
+        "shipping-regions",
+        "delivered-missing",
+        "password-reset",
+        "delayed-delivery"
+      ],
+      "max_coverage": 0
+    },
+    {
+      "id": "unsupported-4",
+      "split": "dev",
+      "expected_articles": [],
+      "retrieved_articles": [
+        "return-window",
+        "missing-item",
+        "delayed-delivery",
+        "guest-orders",
+        "shipping-regions"
+      ],
+      "max_coverage": 0
+    },
+    {
+      "id": "unsupported-5",
+      "split": "heldout",
+      "expected_articles": [],
+      "retrieved_articles": [
+        "delayed-delivery",
+        "delivered-missing",
+        "wrong-item",
+        "shipping-cost",
+        "shipping-times"
+      ],
+      "max_coverage": 0.6
+    },
+    {
+      "id": "unsupported-6",
+      "split": "heldout",
+      "expected_articles": [],
+      "retrieved_articles": [
+        "password-reset",
+        "account-security",
+        "tracking",
+        "damaged-item",
+        "email-change"
+      ],
+      "max_coverage": 0
+    },
+    {
+      "id": "unsupported-7",
+      "split": "heldout",
+      "expected_articles": [],
+      "retrieved_articles": [
+        "return-shipping",
+        "return-process",
+        "return-window",
+        "refund-timing",
+        "delayed-delivery"
+      ],
+      "max_coverage": 0.4
+    }
+  ],
+  "passed": false
+}

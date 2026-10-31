@@ -1,0 +1,13 @@
+# ADR 0007: Evidence-based evaluation and redacted tracing
+
+Status: accepted for the synthetic pilot, 2026-10-31.
+
+A plausible answer does not establish that an action was authorized or committed. The release runner exercises real HTTP routes in a fresh migrated PostgreSQL schema, then reads persisted messages, tool executions, confirmations, tickets, handoffs, and audit events. Expected labels are used only by the scorer, never by the execution driver. Five synchronized conversations measure local completion latency.
+
+The benchmark contains 50 scenario groups, split 35/15 with category coverage. Twenty-four critical scenarios run five times, producing 146 trials. Both first-attempt and all-trial metrics must meet thresholds; critical repeats must all pass. This avoids letting repeated easy successes hide a failed unique scenario. The initial failing report is retained. These implementation-informed cases, including inspected held-out failures, are now regression fixtures; fresh independent examples are needed to estimate generalization.
+
+Human factual-support and resolution labels remain separate from deterministic source validity. The runner emits an unsigned review packet bound to the run, dataset hash, and evidence hashes. Review attestation is an accountability mechanism, not cryptographic proof of identity. Judge calibration reports confusion matrices, agreement, and Cohen's kappa, requires at least 20 labels and five examples of each class, and never promotes a judge into release authority. No judge or human labels are invented.
+
+Each API request has a server-issued trace ID and bounded allowlisted events. Logs contain static route templates, identifiers, enumerated actions/outcomes, duration, source IDs, and usage; they exclude prompts, response text, order references, headers, secrets, and private reasoning. Trace persistence is best effort after a response; a telemetry failure must not turn a committed ticket into a failed write. Business audit records commit atomically with the action. UUIDs are still correlatable metadata: restrict database/log access and implement retention before a deployed pilot.
+
+Provider-reported token counts and configured rates support estimated costs. Missing usage or rates stay unknown. Demo costs are zero because no paid model runs. The input budget is a conservative local tokenizer estimate including instructions, context, tools and framing; the provider's output-token limit is also set. It is not an exact billing tokenizer or a monthly spending cap. Operational reservations, retention, backups and cloud load validation belong to milestone 7.
