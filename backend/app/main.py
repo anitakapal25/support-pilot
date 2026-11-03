@@ -36,7 +36,7 @@ def create_app(
         app.state.provider = provider or (
             DemoProvider()
             if configuration.agent_provider == "demo"
-            else OpenAIProvider(configuration)
+            else OpenAIProvider(configuration, database)
         )
         try:
             yield
@@ -44,7 +44,7 @@ def create_app(
             if engine is None:
                 database.dispose()
 
-    app = FastAPI(title="Support Pilot", version="0.6.0", lifespan=lifespan)
+    app = FastAPI(title="Support Pilot", version="0.7.0", lifespan=lifespan)
     app.include_router(router)
 
     @app.middleware("http")

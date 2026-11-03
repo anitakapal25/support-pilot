@@ -42,7 +42,7 @@ def rrf(rankings: list[list[str]], k: int = 60) -> list[tuple[str, float]]:
 class Retriever:
     def __init__(self, engine, settings, embedder=None):
         self.engine, self.settings = engine, settings
-        self.embedder = embedder or make_embedder(settings)
+        self.embedder = embedder or make_embedder(settings, engine)
 
     def search(self, query: str, timeout: float = 6) -> list[dict]:
         query = re.sub(r"\bSP-\d+\b", "", query, flags=re.IGNORECASE)

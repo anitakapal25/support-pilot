@@ -124,7 +124,9 @@ def old_chat(customer: Customer):
 
 @router.post("/conversations", response_model=ConversationView)
 def new_conversation(body: CreateConversation, request: Request, customer: Customer):
-    return create_conversation(request.app.state.database, customer, str(body.request_id))
+    return create_conversation(
+        request.app.state.database, customer, str(body.request_id), request.app.state.settings
+    )
 
 
 @router.get("/conversations", response_model=list[ConversationView])
@@ -150,6 +152,9 @@ def send_message(
     response: Response,
     customer: Customer,
 ):
+    from app.operations import admission
+
+    admission(request.app.state.database, request.app.state.settings, customer, automation=True)
     result = DurableTurn(
         request.app.state.database, customer, request.app.state.provider, request.app.state.settings
     ).submit(

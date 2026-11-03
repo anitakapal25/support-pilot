@@ -68,11 +68,13 @@ def authorize(db: Session, customer: Principal, conversation_id: str) -> Convers
     return conversation
 
 
-def create_conversation(engine: Engine, customer: Principal, request_id: str) -> ConversationView:
+def create_conversation(
+    engine: Engine, customer: Principal, request_id: str, settings=None
+) -> ConversationView:
     if customer.role != "customer":
         raise HTTPException(403, "Customer account required")
     with Session(engine) as db, db.begin():
-        db.execute(
+        inserted = db.scalar(
             insert(Conversation)
             .values(
                 id=request_id,
@@ -81,7 +83,24 @@ def create_conversation(engine: Engine, customer: Principal, request_id: str) ->
                 next_sequence=1,
             )
             .on_conflict_do_nothing(index_elements=[Conversation.id])
+            .returning(Conversation.id)
         )
+        if inserted and settings and settings.request_limits_enabled:
+            from datetime import timedelta
+
+            from app.operations import consume
+
+            now = utcnow()
+            if not consume(
+                db,
+                "conversations:" + now.strftime("%Y-%m-%d"),
+                1,
+                settings.conversations_per_day,
+                now + timedelta(days=2),
+            ):
+                raise HTTPException(
+                    429, "Daily conversation allowance reached", headers={"Retry-After": "3600"}
+                )
         conversation = authorize(db, customer, request_id)
         return ConversationView.model_validate(conversation, from_attributes=True)
 

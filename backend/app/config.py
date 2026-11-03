@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import Field, SecretStr, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -41,9 +41,39 @@ class Settings(BaseSettings):
     run_attempts: int = Field(default=3, ge=1, le=3)
     conversation_max_turns: int = Field(default=100, ge=1, le=100)
 
+    pilot_enabled: bool = True
+    pilot_admission_percent: int = Field(default=100, ge=0, le=100)
+    request_limits_enabled: bool = False
+    requests_per_minute: int = Field(default=120, ge=1, le=1000)
+    spend_limits_enabled: bool = False
+    monthly_model_budget_usd: float = Field(default=15, gt=0, le=50, allow_inf_nan=False)
+    conversations_per_day: int = Field(default=100, ge=1, le=10000)
+    retention_days: int = Field(default=30, ge=1, le=90)
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def postgres_driver(cls, value):
+        raw = value.get_secret_value() if isinstance(value, SecretStr) else value
+        if isinstance(raw, str) and raw.startswith(("postgres://", "postgresql://")):
+            return "postgresql+psycopg://" + raw.split("://", 1)[1]
+        return value
+
     @model_validator(mode="after")
     def production_settings(self) -> Settings:
         if self.app_env == "production":
+            if not self.request_limits_enabled or not self.spend_limits_enabled:
+                raise ValueError("Production requires request and spend controls")
+            if any(
+                rate is None
+                for rate in (
+                    self.model_input_usd_per_million,
+                    self.model_output_usd_per_million,
+                    self.embedding_usd_per_million,
+                )
+            ):
+                raise ValueError("Production requires explicit provider pricing")
+            if not self.openai_api_key or not self.openai_model:
+                raise ValueError("Production requires provider credentials and model")
             if (
                 not self.cookie_secure
                 or self.agent_provider == "demo"

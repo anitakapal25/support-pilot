@@ -151,8 +151,9 @@ def validate_decision(decision: Decision) -> Decision:
 
 
 class OpenAIProvider:
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, engine=None):
         self.settings = settings
+        self.engine = engine
 
     def decide(self, message: str, timeout: float, context: dict | None = None) -> Decision:
         async def bounded_call() -> Decision:
@@ -213,6 +214,19 @@ class OpenAIProvider:
                 if input_token_count(encoded) > self.settings.model_input_token_limit:
                     emit("provider.failure", provider="openai", outcome="input_limit")
                     raise ProviderUnavailable()
+                from app.operations import SpendLimitExceeded, reserve_spend
+
+                try:
+                    reserve_spend(
+                        self.engine,
+                        self.settings,
+                        "openai",
+                        self.settings.model_input_token_limit,
+                        self.settings.model_output_token_limit,
+                    )
+                except SpendLimitExceeded:
+                    emit("provider.failure", provider="openai", outcome="unavailable")
+                    raise ProviderUnavailable() from None
                 emit("provider.attempt", provider="openai")
                 response = await client.responses.create(
                     model=self.settings.openai_model,

@@ -1,0 +1,126 @@
+{
+  "passed": true,
+  "checks": {
+    "order-alice-own": true,
+    "ticket-replay": true,
+    "handoff-reply": true,
+    "policy-return-window": true,
+    "exact_database_restore": true,
+    "nonempty_restore_blocked": true,
+    "restart_followup": true,
+    "previous_code_on_expanded_schema": true
+  },
+  "tables": {
+    "agent_runs": {
+      "rows": 3,
+      "sha256": "caff28ffe770b53318e9528960dc48d28cf74121478be6f44e444e014345a840"
+    },
+    "alembic_version": {
+      "rows": 1,
+      "sha256": "87e4b4193852dd0d45cfdc97bc1e89ea21d294d7a233909c5e6a3bd324e19f68"
+    },
+    "article_versions": {
+      "rows": 18,
+      "sha256": "2375e3a53c2d76cdb227665373f30171ede94cb170953085929b09b5bf782caf"
+    },
+    "articles": {
+      "rows": 18,
+      "sha256": "e8fd7b3631083b5e2ccd9e98766d61488aad528baa5d4c4b192e0ae83ea2452b"
+    },
+    "audit_events": {
+      "rows": 9,
+      "sha256": "f377ad3e01a81c9a73a5b7f6501aa9227e2f96db0d1517f43dc22f68e99cc8da"
+    },
+    "checkpoint_blobs": {
+      "rows": 8,
+      "sha256": "65226fed4e60a64ea34be386528c4438f4d906734aca4c778f0b3bf10eb0b383"
+    },
+    "checkpoint_migrations": {
+      "rows": 10,
+      "sha256": "7112f5afb86c745a846eec14e3e3f88b37b3e838462fca2739a8ff651fabaa5b"
+    },
+    "checkpoint_writes": {
+      "rows": 21,
+      "sha256": "bc37eaff3d84722f539a04e0ccbc71aa1ee0f8bc38675cd48c3f2012f27fbafb"
+    },
+    "checkpoints": {
+      "rows": 10,
+      "sha256": "24f92784526905c0ae7b0a15dd589c167e3d4eaf53bace9dc27daf9cd08e2432"
+    },
+    "conversations": {
+      "rows": 4,
+      "sha256": "793b5961cc80bee267fb7899b3db06220c51d745ffdc6ef3220d862649d9c0b9"
+    },
+    "handoffs": {
+      "rows": 1,
+      "sha256": "ed9fe6a7f9d01b2a28bb47bfa789d6caabf8b87dfc11ea52098044620deef734"
+    },
+    "knowledge_chunks": {
+      "rows": 19,
+      "sha256": "57bab9346daef37a1f29103c8e685be2dfeac0f10fac13e02ac76ba3a4118f75"
+    },
+    "login_rate_limits": {
+      "rows": 5,
+      "sha256": "8334969d862f77960459b1c127e6605bb14287c0063a10feadf5991d150c7e31"
+    },
+    "login_sessions": {
+      "rows": 4,
+      "sha256": "df2a03b0b150206b08e37c7482d75838063f057854e5325c2a2b71840d95c9e8"
+    },
+    "messages": {
+      "rows": 7,
+      "sha256": "e5c9f608b35cb6261c90332ddcf98d31a2c7bd913485ff63ea4623bc8d78d06a"
+    },
+    "operational_counters": {
+      "rows": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "order_items": {
+      "rows": 2,
+      "sha256": "22d1c74566ee38f905583caf746e3437f91c110e77a3091440a96fa0dc71d572"
+    },
+    "orders": {
+      "rows": 2,
+      "sha256": "6e7413abcd4174b8f6bec57d5f5ea7a20601246e5a2a1bae7a5dda6a9e3a8216"
+    },
+    "pilot_controls": {
+      "rows": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "request_traces": {
+      "rows": 19,
+      "sha256": "e92cb5e94e11f55a98b078a191538a6d2f2a31d88910e4b470bec782e7c24223"
+    },
+    "ticket_confirmations": {
+      "rows": 2,
+      "sha256": "9a4f4cca1249ff7d82e7239018d69b5b57b077217d2deecff8f42006fc61a353"
+    },
+    "ticket_drafts": {
+      "rows": 1,
+      "sha256": "37331e2c3555fea9c30f72c5b609112fa1abf9c30d7ebd860a85784f48b2108e"
+    },
+    "tickets": {
+      "rows": 1,
+      "sha256": "06335c31988ac7182473151e57b9a2e8b9a3ac0ff5d8c43b5b5e644ac55782f6"
+    },
+    "tool_executions": {
+      "rows": 1,
+      "sha256": "ae28ceedf539f37759ff91fcdd1b8ed28982eab3cbbcbe890463637b0a73aa17"
+    },
+    "usage_reservations": {
+      "rows": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "users": {
+      "rows": 4,
+      "sha256": "64dccb1e641b9863dd25544df0e73df1288137ac80c0f08ebe837919113723d8"
+    }
+  },
+  "backup_bytes": 68754,
+  "restore_seconds": 0.381,
+  "rehearsal_seconds": 7.639,
+  "rollback_ref": "3b04a8ee515c19213662059dd951c97fa0589af9",
+  "rto_target_seconds": 900,
+  "rpo_target_hours": 24,
+  "scope": "Local disposable synthetic databases. Previous application code against expanded schema, not cloud traffic cutover. No hosted RTO/RPO certification."
+}

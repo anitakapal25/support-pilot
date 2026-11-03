@@ -312,3 +312,26 @@ class AuditEvent(Base):
     conversation_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), index=True)
     trace_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class OperationalCounter(Base):
+    __tablename__ = "operational_counters"
+    key: Mapped[str] = mapped_column(String(120), primary_key=True)
+    used: Mapped[int] = mapped_column(Integer)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class PilotControl(Base):
+    __tablename__ = "pilot_controls"
+    key: Mapped[str] = mapped_column(String(20), primary_key=True)
+    enabled: Mapped[bool] = mapped_column(Boolean)
+    admission_percent: Mapped[int] = mapped_column(Integer)
+
+
+class UsageReservation(Base):
+    __tablename__ = "usage_reservations"
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    month: Mapped[str] = mapped_column(String(7), index=True)
+    provider: Mapped[str] = mapped_column(String(30))
+    reserved_micro_usd: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

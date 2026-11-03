@@ -17,3 +17,9 @@ evals/reports/ci/
 *.pem
 *.key
 .DS_Store
+
+# Backups contain account data and must never be committed
+backups/
+*.dump
+*.dump.json
+evals/reports/operations-ci.json

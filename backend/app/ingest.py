@@ -189,7 +189,7 @@ def main():
     settings = Settings()
     engine = make_engine(settings)
     try:
-        print(json.dumps(ingest(engine, args.directory, make_embedder(settings), settings)))
+        print(json.dumps(ingest(engine, args.directory, make_embedder(settings, engine), settings)))
     finally:
         engine.dispose()
 

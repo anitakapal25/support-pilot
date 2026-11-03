@@ -52,8 +52,9 @@ class DemoEmbedder:
 
 
 class OpenAIEmbedder:
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, engine=None):
         self.settings = settings
+        self.engine = engine
         self.dimensions = settings.embedding_dimensions
         self.identity = f"openai:{settings.embedding_model}:{self.dimensions}"
 
@@ -65,6 +66,18 @@ class OpenAIEmbedder:
             async with AsyncOpenAI(
                 api_key=key.get_secret_value(), timeout=timeout, max_retries=0
             ) as client:
+                from app.operations import SpendLimitExceeded, reserve_spend
+                from app.token_budget import input_token_count
+
+                try:
+                    reserve_spend(
+                        self.engine,
+                        self.settings,
+                        "embedding_openai",
+                        sum(input_token_count(value) for value in texts),
+                    )
+                except SpendLimitExceeded:
+                    raise ProviderUnavailable() from None
                 emit("provider.attempt", provider="embedding_openai")
                 response = await client.embeddings.create(
                     model=self.settings.embedding_model,
@@ -89,7 +102,7 @@ class OpenAIEmbedder:
             raise ProviderUnavailable() from None
 
 
-def make_embedder(settings: Settings) -> Embedder:
+def make_embedder(settings: Settings, engine=None) -> Embedder:
     if settings.embedding_provider == "demo":
         return DemoEmbedder(settings.embedding_dimensions)
-    return OpenAIEmbedder(settings)
+    return OpenAIEmbedder(settings, engine)

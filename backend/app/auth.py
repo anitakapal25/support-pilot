@@ -61,6 +61,9 @@ def current_principal(request: Request) -> Principal:
             raise HTTPException(403, "Invalid CSRF token")
     bind(actor_id=principal.id)
     emit("auth.authorized", outcome="allowed")
+    from app.operations import admission
+
+    admission(request.app.state.database, request.app.state.settings, principal)
     return principal
 
 
