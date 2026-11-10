@@ -26,6 +26,8 @@ def demo_settings(**overrides):
         "allowed_origins": [ORIGIN],
         "openai_api_key": "sk-test-not-used",
         "openai_model": "test-model",
+        # Pinned explicitly: CI exports AGENT_PROVIDER=demo, which would otherwise win.
+        "agent_provider": "openai",
         "embedding_provider": "openai",
         "request_limits_enabled": True,
         "spend_limits_enabled": True,
