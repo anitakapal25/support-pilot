@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     database_url: SecretStr = SecretStr(
         "postgresql+psycopg://support:local-development-only@localhost:5432/support"
     )
-    app_env: Literal["development", "production"] = "development"
+    app_env: Literal["development", "demo", "production"] = "development"
     cookie_secure: bool = False
     allowed_origins: list[str] = [
         "http://localhost:58000",
@@ -50,6 +50,13 @@ class Settings(BaseSettings):
     conversations_per_day: int = Field(default=100, ge=1, le=10000)
     retention_days: int = Field(default=30, ge=1, le=90)
 
+    # Hosted public demo (APP_ENV=demo): each visitor gets a private synthetic guest group.
+    guest_ttl_hours: int = Field(default=24, ge=1, le=72)
+    guest_sessions_per_ip_hour: int = Field(default=5, ge=1, le=100)
+    guest_sessions_per_day: int = Field(default=200, ge=1, le=10000)
+    # Bearer token for the scheduled maintenance endpoint; endpoint is disabled when unset.
+    maintenance_token: SecretStr | None = None
+
     @field_validator("database_url", mode="before")
     @classmethod
     def postgres_driver(cls, value):
@@ -60,7 +67,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def production_settings(self) -> Settings:
-        if self.app_env == "production":
+        # A public demo is an internet-facing deployment: same guards as production.
+        if self.app_env in ("production", "demo"):
             if not self.request_limits_enabled or not self.spend_limits_enabled:
                 raise ValueError("Production requires request and spend controls")
             if any(
@@ -84,4 +92,7 @@ class Settings(BaseSettings):
                 not origin.startswith("https://") for origin in self.allowed_origins
             ):
                 raise ValueError("Production requires explicit HTTPS origins")
+        token = self.maintenance_token
+        if token is not None and 0 < len(token.get_secret_value()) < 32:
+            raise ValueError("Maintenance token must be at least 32 characters")
         return self

@@ -3,7 +3,7 @@ import { api, ApiError } from './api';
 import { TicketPanel } from './TicketPanel';
 import type { Handoff } from './SupportDashboard';
 
-export type Session = { id: string; role: 'customer' | 'support'; name: string; email: string; csrf_token: string };
+export type Session = { id: string; role: 'customer' | 'support'; name: string; email: string; csrf_token: string; guest?: boolean };
 type Order = { order_reference: string; status: string; estimated_delivery: string | null; checked_at: string };
 type Citation = { id: string; title: string; section: string; updated_at: string; excerpt: string };
 type Reply = { citations?: Citation[]; request_id: string; outcome: string; message: string; order: Order | null };

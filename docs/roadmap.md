@@ -1,11 +1,11 @@
 # Delivery and learning roadmap
 
-Current status: milestone 6 implementation and automated demo gates pass. The benchmark
-covers 50 unique scenarios and 146 trials, with redacted traces and transactional audits.
-Local verification: 72 backend tests, 14 desktop/mobile browser tests, and all machine
-release gates passed. Independent human grounding/resolution review remains pending;
-live-provider behavior and production performance have not been validated.
-Complete the milestone 6 learning/review checkpoint before deployment work.
+Current status: milestone 7 operational controls and the hosted-demo profile are
+implemented. Local verification on 2026-11-10: 90 backend tests, 14 desktop/mobile browser
+tests and a container cold start on an empty database passed. The Render free-tier deployment,
+live-provider evaluation and independent human review are still to be performed; none of
+those results has been measured. Complete the milestone 7 checkpoint and the human review
+before calling the demo validated.
 
 Implement one milestone at a time. Each ends with tests, a code walkthrough, an
 exercise, an architecture note, and the learner explaining the critical code path.

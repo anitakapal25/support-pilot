@@ -42,6 +42,9 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(100))
     password_hash: Mapped[str] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(16), default="customer")
+    # Hosted-demo guests only: members of one group see only each other's data.
+    demo_group: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), index=True)
+    demo_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
 
 
 class LoginSession(Base):

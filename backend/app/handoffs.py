@@ -82,6 +82,12 @@ def require_support(actor):
         raise HTTPException(403, "Support account required")
 
 
+def visible_to(db, actor, conversation) -> bool:
+    """Hosted-demo guests are scoped to their own group; regular staff see non-guests."""
+    customer = db.get(User, conversation.customer_id)
+    return customer is not None and customer.demo_group == getattr(actor, "demo_group", None)
+
+
 def locked_handoff(db, actor, handoff_id):
     require_support(actor)
     # Always lock conversation first, like queue creation, sequence allocation, and AI finalization.
@@ -94,7 +100,7 @@ def locked_handoff(db, actor, handoff_id):
     handoff = db.scalar(
         select(Handoff).where(Handoff.id == handoff_id).execution_options(populate_existing=True)
     )
-    if not conversation or not handoff:
+    if not conversation or not handoff or not visible_to(db, actor, conversation):
         raise HTTPException(404, "Handoff unavailable")
     bind(conversation_id=conversation.id)
     return conversation, handoff
@@ -107,7 +113,12 @@ def queue(engine, actor, status="queued"):
             handoff_view(row)
             for row in db.scalars(
                 select(Handoff)
-                .where(Handoff.status == status)
+                .join(Conversation, Conversation.id == Handoff.conversation_id)
+                .join(User, User.id == Conversation.customer_id)
+                .where(
+                    Handoff.status == status,
+                    User.demo_group.is_not_distinct_from(getattr(actor, "demo_group", None)),
+                )
                 .order_by(Handoff.created_at, Handoff.id)
                 .limit(100)
             )
@@ -189,6 +200,8 @@ def support_detail(engine, actor, handoff_id):
         if not handoff:
             raise HTTPException(404, "Handoff unavailable")
         conversation = db.get(Conversation, handoff.conversation_id)
+        if not visible_to(db, actor, conversation):
+            raise HTTPException(404, "Handoff unavailable")
         customer = db.get(User, conversation.customer_id)
         messages = [
             message_view(db, row)

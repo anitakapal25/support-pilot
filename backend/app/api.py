@@ -1,3 +1,4 @@
+import secrets
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -5,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Request, Response
 from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
-from app import handoffs
+from app import demo, handoffs
 from app.auth import (
     COOKIE_NAME,
     Principal,
@@ -22,6 +23,7 @@ from app.conversations import (
     list_conversations,
     read_run,
 )
+from app.maintenance import run_maintenance
 from app.models import LoginSession
 from app.orders import OrderUnavailable, SyntheticCommerceAdapter
 from app.schemas import (
@@ -30,6 +32,7 @@ from app.schemas import (
     ConversationView,
     CreateConversation,
     CreateTicketDraft,
+    DemoSwitch,
     HandoffView,
     LoginRequest,
     MessageView,
@@ -53,25 +56,81 @@ Support = Annotated[Principal, Depends(current_support)]
 
 @router.get("/config")
 def public_config(request: Request) -> dict:
-    return {"demo": request.app.state.settings.agent_provider == "demo"}
-
-
-@router.post("/auth/login", response_model=SessionView)
-def login(body: LoginRequest, request: Request, response: Response) -> SessionView:
-    user, token, csrf = authenticate(request, body.email, body.password)
     settings = request.app.state.settings
+    return {
+        "demo": settings.agent_provider == "demo",
+        "hosted_demo": settings.app_env == "demo",
+        "guest_ttl_hours": settings.guest_ttl_hours if settings.app_env == "demo" else None,
+    }
+
+
+def set_session_cookie(response: Response, settings, token: str, hours: float) -> None:
     response.set_cookie(
         COOKIE_NAME,
         token,
         httponly=True,
         secure=settings.cookie_secure,
         samesite="strict",
-        max_age=settings.session_hours * 3600,
+        max_age=int(hours * 3600),
         path="/",
     )
+
+
+def session_view(user, csrf: str) -> SessionView:
     return SessionView(
-        id=user.id, role=user.role, name=user.name, email=user.email, csrf_token=csrf
+        id=user.id,
+        role=user.role,
+        name=user.name,
+        email=user.email,
+        csrf_token=csrf,
+        guest=user.demo_group is not None,
     )
+
+
+@router.post("/auth/login", response_model=SessionView)
+def login(body: LoginRequest, request: Request, response: Response) -> SessionView:
+    user, token, csrf = authenticate(request, body.email, body.password)
+    settings = request.app.state.settings
+    set_session_cookie(response, settings, token, settings.session_hours)
+    return session_view(user, csrf)
+
+
+@router.post("/demo/session", response_model=SessionView)
+def start_demo(request: Request, response: Response) -> SessionView:
+    user, token, csrf, _ = demo.create_guest(request)
+    settings = request.app.state.settings
+    set_session_cookie(response, settings, token, demo.session_hours(settings))
+    return session_view(user, csrf)
+
+
+@router.get("/demo/orders")
+def demo_orders(request: Request, principal: SignedIn) -> dict:
+    demo.require_hosted_demo(request)
+    if principal.demo_group is None:
+        raise HTTPException(404, "Not found")
+    return demo.guest_orders(request.app.state.database, principal)
+
+
+@router.post("/demo/switch", response_model=SessionView)
+def switch_demo_view(
+    body: DemoSwitch, request: Request, response: Response, principal: SignedIn
+) -> SessionView:
+    user, token, csrf = demo.switch_view(request, principal, body.role)
+    settings = request.app.state.settings
+    set_session_cookie(response, settings, token, demo.session_hours(settings))
+    return session_view(user, csrf)
+
+
+@router.post("/internal/maintenance", include_in_schema=False)
+def scheduled_maintenance(request: Request) -> dict:
+    settings = request.app.state.settings
+    expected = settings.maintenance_token.get_secret_value() if settings.maintenance_token else ""
+    supplied = request.headers.get("authorization", "").removeprefix("Bearer ")
+    if not expected:
+        raise HTTPException(404, "Not found")
+    if not secrets.compare_digest(supplied.encode(), expected.encode()):
+        raise HTTPException(401, "Invalid maintenance token")
+    return run_maintenance(request.app.state.database, settings)
 
 
 @router.get("/auth/me", response_model=SessionView)
@@ -82,6 +141,7 @@ def me(customer: SignedIn) -> SessionView:
         name=customer.name,
         email=customer.email,
         csrf_token=customer.csrf_token,
+        guest=customer.demo_group is not None,
     )
 
 

@@ -1,6 +1,6 @@
 # Support Pilot
 
-**Milestone 6: evaluation, security checks, and redacted tracing.** Built with FastAPI, PostgreSQL,
+**Milestone 7: operational controls and a hosted public demo.** Built with FastAPI, PostgreSQL,
 SQLAlchemy/Alembic, LangGraph, and React/TypeScript. Local demo mode runs without a model
 key; OpenAI mode uses a real tool-calling provider adapter. The UI labels demo mode.
 
@@ -10,6 +10,16 @@ checkpointed graph, saved chat history, bounded follow-up context, stable reques
 serialized conversation runs, recovery controls, migrations, and security tests.
 
 Policy retrieval, confirmed synthetic tickets, and human handoff are implemented. This development milestone is not a production release.
+
+## Hosted demo (Render free tier)
+
+`deploy/render.yaml` deploys a **public demo** with synthetic data and the live OpenAI router
+(`APP_ENV=demo`). Visitors select **Try the demo** to get a private guest group: their own
+order, another customer's order (to show non-disclosure), and a support view of only their own
+handoffs. Guest data is deleted after 24 hours, and model spend is capped at US$5/month.
+Follow the [deploy runbook](docs/learning/milestone-7.md#deploy-runbook-render-free-tier).
+The design is in [ADR 0008](docs/decisions/0008-hosted-demo.md). It is a demonstration, not a customer
+pilot: live-model evaluation and human review are still to be completed.
 
 ## Start with Docker Desktop (Windows, macOS, Linux)
 
@@ -140,10 +150,10 @@ limitations, including this workspace's Docker DNS workaround.
 
 ## Learning
 
-Start with [the milestone 6 walkthrough](docs/learning/milestone-6.md), then answer its
-checkpoint before moving on. [Architecture decision](docs/decisions/0007-evaluation-and-telemetry.md)
-explains evaluation evidence, human review, and redacted tracing. [Roadmap](docs/roadmap.md) tracks
-future milestones.
+Start with [the milestone 7 walkthrough](docs/learning/milestone-7.md), then answer its
+checkpoint. [ADR 0008](docs/decisions/0008-hosted-demo.md) explains the hosted demo;
+[ADR 0007](docs/decisions/0007-evaluation-and-telemetry.md) explains evaluation evidence, human
+review, and redacted tracing. [Roadmap](docs/roadmap.md) tracks milestones.
 
 ## Durable conversation API
 
@@ -293,3 +303,23 @@ Automated demo gates pass; independent human grounding/resolution review and liv
 validation remain pending. Read the [milestone 6 walkthrough](docs/learning/milestone-6.md)
 for measured results, review instructions, exercises and limitations. Deployment and
 operational controls remain milestone 7.
+
+## Milestone 7: operations and hosted demo
+
+Operator commands (with `PYTHONPATH=backend` and `DATABASE_URL` set):
+
+```sh
+python -m app.maintenance status                     # pilot switch and reserved spend
+python -m app.maintenance pilot --enabled false      # pause automated answers
+python -m app.maintenance retention                  # dry run; add --apply to delete
+python -m app.provision --email a@b.test --name A --role support   # production accounts
+python -m app.evaluate_release --live                # paid OpenAI evaluation, each case once
+```
+
+`APP_ENV=demo` applies every production configuration guard and also enables `/api/demo/*`.
+`RUN_MIGRATIONS_ON_START=true` migrates and ingests before serving (free hosting has no
+pre-deploy step). `FORWARDED_ALLOW_IPS` controls which proxy addresses may supply the client IP
+used by login and guest rate limits. Set it only to addresses that can reach the container.
+`MAINTENANCE_TOKEN` (32+ characters) enables `POST /api/internal/maintenance`, which the
+[scheduled workflow](.github/workflows/maintenance.yml) calls every six hours.
+

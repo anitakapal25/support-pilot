@@ -1,3 +1,31 @@
+# Milestone 7 verification — 2026-11-10
+
+Measured locally against PostgreSQL (pgvector 17) with demo providers:
+
+- **90 backend tests passed** (72 earlier, plus milestone 7 operations tests and 13 new ones). New coverage:
+  trusted versus untrusted `X-Forwarded-For`, demo-profile configuration guards, guests seeing
+  their own order and not the neighbour's (API and chat), guest password-login rejection,
+  support isolation between two guest groups (queue, detail, claim), regular staff never seeing
+  guest handoffs, per-IP guest creation limits, maintenance token checks, and purging an expired
+  group while keeping a fresh one.
+- **14 desktop/mobile Chromium tests passed** unchanged. The guest UI flow has **no browser test**:
+  the demo profile requires HTTPS origins and secure cookies, which the local HTTP test server
+  cannot satisfy. The guest bar was checked only by type-checking and production build.
+- Migration **0008** applied to the development database; `alembic check` reports no drift.
+  Ruff lint/format, TypeScript checking and the production frontend build passed.
+- **Container cold start:** the production image, run with a 512 MiB limit against a new empty
+  database and `RUN_MIGRATIONS_ON_START=true`, migrated to 0008, activated 18 articles and was
+  ready in about 4 s. It used 180 MiB idle, and a restart was idempotent. This used demo embeddings;
+  the hosted profile's first boot also makes OpenAI embedding calls.
+- `evaluate_release --live` refuses to start without the OpenAI provider, key, model and all three
+  prices. **No live run was made**: no paid calls, so live accuracy, latency and cost are unknown.
+
+Not verified: the Render Blueprint has not been imported (free-plan field acceptance, pgvector
+availability and proxy headers on Render are unconfirmed until the first deploy), the GitHub
+workflows have not run remotely, and human review is still pending.
+
+---
+
 # Milestone 6 verification — 2026-10-31
 
 Measured locally against PostgreSQL and demo providers:

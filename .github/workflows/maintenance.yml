@@ -1,0 +1,55 @@
+name: hosted-demo-maintenance
+# Render's free tier has no cron jobs. This scheduled run wakes the service, applies
+# retention, deletes expired demo guests, and fails (GitHub emails the owner) when the
+# service is unhealthy or model spend reaches 80% of the monthly budget.
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hosted-demo-maintenance
+  cancel-in-progress: false
+
+jobs:
+  maintain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE_URL: ${{ secrets.SUPPORT_PILOT_URL }}
+      TOKEN: ${{ secrets.MAINTENANCE_TOKEN }}
+    steps:
+      - name: Require configuration
+        run: |
+          if [ -z "$BASE_URL" ] || [ -z "$TOKEN" ]; then
+            echo "::error::Set SUPPORT_PILOT_URL and MAINTENANCE_TOKEN repository secrets"
+            exit 1
+          fi
+      - name: Wake service and wait for readiness
+        run: |
+          # A sleeping free instance can take a minute or more to start.
+          for attempt in $(seq 1 18); do
+            if curl -fsS --max-time 20 "$BASE_URL/health/ready"; then echo; exit 0; fi
+            echo "Not ready (attempt $attempt); retrying in 10s"
+            sleep 10
+          done
+          echo "::error::Service did not become ready"
+          exit 1
+      - name: Run maintenance
+        run: |
+          curl -fsS --max-time 120 -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            "$BASE_URL/api/internal/maintenance" -o result.json
+          jq . result.json
+      - name: Check spend and queue
+        run: |
+          fraction=$(jq -r '.spend.fraction' result.json)
+          queued=$(jq -r '.queued_handoffs' result.json)
+          echo "Spend fraction: $fraction · queued handoffs: $queued"
+          if jq -e '.spend.fraction >= 0.8' result.json > /dev/null; then
+            echo "::error::Model spend is at or above 80% of the monthly budget"
+            exit 1
+          fi

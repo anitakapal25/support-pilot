@@ -31,6 +31,7 @@ class Principal:
     name: str
     role: str
     csrf_token: str
+    demo_group: str | None = None
 
 
 def check_origin(request: Request) -> None:
@@ -52,7 +53,9 @@ def current_principal(request: Request) -> Principal:
         if row is None:
             raise HTTPException(401, "Sign in to continue")
         session, user = row
-        principal = Principal(user.id, user.email, user.name, user.role, session.csrf_token)
+        principal = Principal(
+            user.id, user.email, user.name, user.role, session.csrf_token, user.demo_group
+        )
     if request.method not in {"GET", "HEAD", "OPTIONS"}:
         check_origin(request)
         if not secrets.compare_digest(
@@ -93,6 +96,24 @@ def throttle_login(request: Request, email: str) -> None:
         )
 
 
+def start_session(db, user: User, old_token: str, hours: float) -> tuple[str, str]:
+    """Rotate to a fresh opaque session for user inside the caller's transaction."""
+    if old_token:
+        db.execute(delete(LoginSession).where(LoginSession.token_hash == token_hash(old_token)))
+    db.execute(delete(LoginSession).where(LoginSession.expires_at < utcnow()))
+    token, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
+    db.add(
+        LoginSession(
+            token_hash=token_hash(token),
+            user_id=user.id,
+            csrf_token=csrf,
+            expires_at=utcnow() + timedelta(hours=hours),
+        )
+    )
+    bind(actor_id=user.id)
+    return token, csrf
+
+
 def authenticate(request: Request, email: str, password: str) -> tuple[User, str, str]:
     check_origin(request)
     # Requiring a custom header also protects login requests without a session CSRF token.
@@ -105,22 +126,12 @@ def authenticate(request: Request, email: str, password: str) -> tuple[User, str
             password_hasher.verify(user.password_hash if user else _DUMMY_HASH, password)
         except VerificationError:
             raise HTTPException(401, "Email or password is incorrect") from None
-        if user is None:
+        # Guest accounts have no usable password; they are entered only via the demo route.
+        if user is None or user.demo_group is not None:
             raise HTTPException(401, "Email or password is incorrect")
-        old_token = request.cookies.get(COOKIE_NAME, "")
-        if old_token:
-            db.execute(delete(LoginSession).where(LoginSession.token_hash == token_hash(old_token)))
-        db.execute(delete(LoginSession).where(LoginSession.expires_at < utcnow()))
-        token, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
-        db.add(
-            LoginSession(
-                token_hash=token_hash(token),
-                user_id=user.id,
-                csrf_token=csrf,
-                expires_at=utcnow() + timedelta(hours=request.app.state.settings.session_hours),
-            )
+        token, csrf = start_session(
+            db, user, request.cookies.get(COOKIE_NAME, ""), request.app.state.settings.session_hours
         )
-        bind(actor_id=user.id)
         audit_session(db, user.id, "auth.login", user.id)
         db.commit()
         return user, token, csrf

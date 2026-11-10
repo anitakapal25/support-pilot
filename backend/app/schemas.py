@@ -37,6 +37,12 @@ class SessionView(BaseModel):
     name: str
     email: str
     csrf_token: str
+    guest: bool = False
+
+
+class DemoSwitch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    role: Literal["customer", "support"]
 
 
 class ChatRequest(BaseModel):

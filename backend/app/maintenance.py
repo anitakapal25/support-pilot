@@ -2,9 +2,10 @@
 
 import argparse
 import json
+import math
 from datetime import timedelta
 
-from sqlalchemy import delete, select, text
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -13,6 +14,7 @@ from app.config import Settings
 from app.database import make_engine
 from app.models import (
     AuditEvent,
+    Handoff,
     LoginRateLimit,
     LoginSession,
     OperationalCounter,
@@ -38,6 +40,52 @@ def set_pilot(engine, enabled, percent):
     return {"enabled": enabled, "admission_percent": percent}
 
 
+def purge_conversation(engine, id, cutoff=None) -> bool:
+    """Delete one conversation and its derived records; False when it must be kept.
+
+    With a cutoff, retention rules are rechecked under the conversation lock. Without
+    one (expired demo guests), only an unfinished run keeps the conversation.
+    """
+    with checkpoint_connection(engine) as conn:
+        if not conn.execute(
+            "SELECT pg_try_advisory_lock(%s) AS held", (lock_key(str(id)),)
+        ).fetchone()["held"]:
+            return False
+        try:
+            with conn.transaction():
+                if not conn.execute(
+                    "SELECT id FROM conversations WHERE id=%s FOR UPDATE", (id,)
+                ).fetchone():
+                    return True
+                # Recheck under the same row lock used by customer and human writes.
+                if cutoff is not None:
+                    keep = not conn.execute(
+                        """SELECT 1 FROM conversations c WHERE c.id=%s
+                        AND NOT EXISTS (SELECT 1 FROM messages WHERE conversation_id=c.id AND created_at>=%s)
+                        AND NOT EXISTS (SELECT 1 FROM agent_runs WHERE conversation_id=c.id AND (updated_at>=%s OR status IN ('pending','running','retryable')))
+                        AND NOT EXISTS (SELECT 1 FROM handoffs WHERE conversation_id=c.id AND (status!='resolved' OR resolved_at>=%s))""",
+                        (id, cutoff, cutoff, cutoff),
+                    ).fetchone()
+                else:
+                    keep = conn.execute(
+                        "SELECT 1 FROM agent_runs WHERE conversation_id=%s AND status IN ('pending','running')",
+                        (id,),
+                    ).fetchone()
+                if keep:
+                    return False
+                for table in ("checkpoint_writes", "checkpoint_blobs", "checkpoints"):
+                    conn.execute(
+                        f"DELETE FROM {table} WHERE thread_id IN (SELECT id::text FROM agent_runs WHERE conversation_id=%s)",
+                        (id,),
+                    )
+                conn.execute("DELETE FROM request_traces WHERE conversation_id=%s", (id,))
+                conn.execute("DELETE FROM audit_events WHERE conversation_id=%s", (id,))
+                conn.execute("DELETE FROM conversations WHERE id=%s", (id,))
+                return True
+        finally:
+            conn.execute("SELECT pg_advisory_unlock(%s)", (lock_key(str(id)),))
+
+
 def cleanup(engine, days=30, batch=100, dry_run=True):
     cutoff = utcnow() - timedelta(days=days)
     # Retain unresolved human work and recently active conversations. Never interrupt a run.
@@ -51,32 +99,7 @@ def cleanup(engine, days=30, batch=100, dry_run=True):
     deleted = 0
     if not dry_run:
         for id in candidates:
-            with checkpoint_connection(engine) as conn:
-                if not conn.execute(
-                    "SELECT pg_try_advisory_lock(%s) AS held", (lock_key(str(id)),)
-                ).fetchone()["held"]:
-                    continue
-                with conn.transaction():
-                    conn.execute("SELECT id FROM conversations WHERE id=%s FOR UPDATE", (id,))
-                    # Recheck under the same row lock used by customer and human writes.
-                    fresh = conn.execute(
-                        """SELECT 1 FROM conversations c WHERE c.id=%s
-                        AND NOT EXISTS (SELECT 1 FROM messages WHERE conversation_id=c.id AND created_at>=%s)
-                        AND NOT EXISTS (SELECT 1 FROM agent_runs WHERE conversation_id=c.id AND (updated_at>=%s OR status IN ('pending','running','retryable')))
-                        AND NOT EXISTS (SELECT 1 FROM handoffs WHERE conversation_id=c.id AND (status!='resolved' OR resolved_at>=%s))""",
-                        (id, cutoff, cutoff, cutoff),
-                    ).fetchone()
-                    if not fresh:
-                        continue
-                    for table in ("checkpoint_writes", "checkpoint_blobs", "checkpoints"):
-                        conn.execute(
-                            f"DELETE FROM {table} WHERE thread_id IN (SELECT id::text FROM agent_runs WHERE conversation_id=%s)",
-                            (id,),
-                        )
-                    conn.execute("DELETE FROM request_traces WHERE conversation_id=%s", (id,))
-                    conn.execute("DELETE FROM audit_events WHERE conversation_id=%s", (id,))
-                    conn.execute("DELETE FROM conversations WHERE id=%s", (id,))
-                    deleted += 1
+            deleted += purge_conversation(engine, id, cutoff)
         with Session(engine) as db, db.begin():
             for model, field, boundary in (
                 (RequestTrace, RequestTrace.started_at, cutoff),
@@ -92,6 +115,40 @@ def cleanup(engine, days=30, batch=100, dry_run=True):
         "eligible_conversations": len(candidates),
         "deleted_conversations": deleted,
         "retention_days": days,
+    }
+
+
+def spend_status(db, settings) -> dict:
+    reserved = (
+        db.scalar(
+            select(OperationalCounter.used).where(
+                OperationalCounter.key == "spend:" + utcnow().strftime("%Y-%m")
+            )
+        )
+        or 0
+    )
+    budget = math.floor(settings.monthly_model_budget_usd * 1_000_000)
+    return {
+        "reserved_micro_usd": reserved,
+        "budget_micro_usd": budget,
+        "fraction": round(reserved / budget, 4),
+    }
+
+
+def run_maintenance(engine, settings) -> dict:
+    """Scheduled pass: retention, expired demo guests, and a status summary for alerting."""
+    from app.demo import purge_expired_guests
+
+    retention = cleanup(engine, settings.retention_days, 100, dry_run=False)
+    guests = purge_expired_guests(engine, lambda id: purge_conversation(engine, id))
+    with Session(engine) as db:
+        queued = db.scalar(select(func.count(Handoff.id)).where(Handoff.status == "queued"))
+        spend = spend_status(db, settings)
+    return {
+        "retention": retention,
+        "deleted_guest_groups": guests,
+        "queued_handoffs": queued,
+        "spend": spend,
     }
 
 

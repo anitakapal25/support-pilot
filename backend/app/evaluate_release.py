@@ -74,7 +74,7 @@ def aggregate(rows):
     return metrics
 
 
-def evaluate(settings, dataset, output):
+def evaluate(settings, dataset, output, repetitions=5):
     cases, dataset_hash, provenance = load_dataset(dataset)
     output.mkdir(parents=True, exist_ok=True)
     run_id = str(uuid4())
@@ -83,7 +83,7 @@ def evaluate(settings, dataset, output):
         ingest(engine, ROOT / "knowledge", make_embedder(settings), settings)
         with EvaluationSession(engine, settings) as session:
             for case in cases:
-                for repetition in range(5 if case.critical else 1):
+                for repetition in range(repetitions if case.critical else 1):
                     actual = Trial(session, case).execute()
                     checks = score(case, actual)
                     row = {
@@ -216,7 +216,12 @@ def evaluate(settings, dataset, output):
         "run_id": run_id,
         "dataset_sha256": dataset_hash,
         "provenance": provenance,
-        "profile": {"agent": settings.agent_provider, "embedding": settings.embedding_provider},
+        "profile": {
+            "agent": settings.agent_provider,
+            "model": settings.openai_model if settings.agent_provider == "openai" else None,
+            "embedding": settings.embedding_provider,
+            "critical_repetitions": repetitions,
+        },
         "metrics": metrics,
         "first_attempt_metrics": aggregate(first),
         "by_split": {
@@ -276,16 +281,53 @@ def evaluate(settings, dataset, output):
     return report
 
 
+def live_settings() -> Settings:
+    """Paid profile from the environment. Explicit pricing is required so cost is reported."""
+    settings = Settings(app_env="development", cookie_secure=False, spend_limits_enabled=False)
+    missing = [
+        name
+        for name, ok in (
+            ("AGENT_PROVIDER=openai", settings.agent_provider == "openai"),
+            ("EMBEDDING_PROVIDER=openai", settings.embedding_provider == "openai"),
+            ("OPENAI_API_KEY", bool(settings.openai_api_key)),
+            ("OPENAI_MODEL", bool(settings.openai_model)),
+            ("MODEL_INPUT_USD_PER_MILLION", settings.model_input_usd_per_million is not None),
+            ("MODEL_OUTPUT_USD_PER_MILLION", settings.model_output_usd_per_million is not None),
+            ("EMBEDDING_USD_PER_MILLION", settings.embedding_usd_per_million is not None),
+        )
+        if not ok
+    ]
+    if missing:
+        raise SystemExit("Live evaluation requires: " + ", ".join(missing))
+    return settings
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=Path("evals/reports/milestone6"))
+    parser.add_argument("--output", type=Path)
     parser.add_argument("--dataset", type=Path, default=Path("evals/scenarios.json"))
-    args = parser.parse_args()
-    # Explicitly offline provider profile; no accidental paid calls from a developer's .env.
-    settings = Settings(
-        agent_provider="demo", embedding_provider="demo", app_env="development", cookie_secure=False
+    parser.add_argument(
+        "--live",
+        action="store_true",
+        help="Use the paid OpenAI profile from the environment; each case runs once.",
     )
-    report = evaluate(settings, args.dataset, args.output)
+    args = parser.parse_args()
+    if args.live:
+        settings, repetitions = live_settings(), 1
+        output = args.output or Path("evals/reports/live")
+    else:
+        # Explicitly offline provider profile; no accidental paid calls from a developer's .env.
+        settings, repetitions = (
+            Settings(
+                agent_provider="demo",
+                embedding_provider="demo",
+                app_env="development",
+                cookie_secure=False,
+            ),
+            5,
+        )
+        output = args.output or Path("evals/reports/milestone6")
+    report = evaluate(settings, args.dataset, output, repetitions)
     print(
         json.dumps(
             {

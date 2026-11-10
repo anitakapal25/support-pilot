@@ -29,7 +29,7 @@ python -m app.evaluate_release
 python -m app.inspect_trace SERVER_REQUEST_UUID
 ```
 
-The evaluation CLI always uses demo routing and demo embeddings, even when `.env` selects OpenAI. It creates and cleans up only its own temporary schema. It does not overwrite application conversations. Its exit status represents **machine gates**, not completed human release review. There is no paid-provider switch in this milestone's CLI.
+Without `--live` (added in milestone 7), the evaluation CLI always uses demo routing and demo embeddings, even when `.env` selects OpenAI. It creates and cleans up only its own temporary schema. It does not overwrite application conversations. Its exit status represents **machine gates**, not completed human release review.
 
 Artifacts under `evals/reports/milestone6/`:
 
