@@ -11,7 +11,7 @@ services:
     plan: free
     region: singapore
     repo: https://github.com/anitakapal25/support-pilot
-    branch: main
+    branch: milestone-7-hosted-demo
     dockerContext: .
     dockerfilePath: ./Dockerfile
     # Deploy only commits whose GitHub checks (CI) passed.
